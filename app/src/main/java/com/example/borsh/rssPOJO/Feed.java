@@ -1,4 +1,4 @@
-package com.example.borsh.rss;
+package com.example.borsh.rssPOJO;
 
 import javax.annotation.Generated;
 import com.google.gson.annotations.SerializedName;

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-		package="com.example.borsh.hometask2">
+					package="com.example.borsh.ui">
 
-		<uses-permission android:name="android.permission.INTERNET"/>
+		<uses-permission android:name="android.permission.INTERNET" />
+		<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+		<uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+		<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+		<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
 		<application
 				android:allowBackup="true"
@@ -11,19 +15,26 @@
 				android:roundIcon="@mipmap/ic_launcher_round"
 				android:supportsRtl="true"
 				android:theme="@style/AppTheme">
-				<activity android:name=".MainActivity">
+				<activity android:name="com.example.borsh.ui.MainActivity">
 						<intent-filter>
-								<action android:name="android.intent.action.MAIN"/>
+								<action android:name="android.intent.action.MAIN" />
 
-								<category android:name="android.intent.category.LAUNCHER"/>
+								<category android:name="android.intent.category.LAUNCHER" />
 						</intent-filter>
 				</activity>
 
 				<service
-						android:name=".ApiService"
+						android:name="com.example.borsh.ui.ApiService"
 						android:enabled="true"
 						android:exported="true">
 				</service>
+
+				<provider
+						android:name="com.example.borsh.database.MyContentProvider"
+						android:authorities="com.example.borsh.rss.database"
+						android:enabled="true"
+						android:exported="false">
+				</provider>
 		</application>
 
 </manifest>

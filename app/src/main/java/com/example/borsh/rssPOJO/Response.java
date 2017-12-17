@@ -1,5 +1,6 @@
-package com.example.borsh.rss;
+package com.example.borsh.rssPOJO;
 
+import android.support.annotation.NonNull;
 import java.util.List;
 import javax.annotation.Generated;
 import com.google.gson.annotations.SerializedName;
@@ -28,6 +29,7 @@ public class Response{
 		this.items = items;
 	}
 
+	@NonNull
 	public List<ItemsItem> getItems(){
 		return items;
 	}

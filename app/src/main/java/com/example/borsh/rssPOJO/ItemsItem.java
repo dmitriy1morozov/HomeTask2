@@ -1,4 +1,4 @@
-package com.example.borsh.rss;
+package com.example.borsh.rssPOJO;
 
 import java.util.List;
 import javax.annotation.Generated;

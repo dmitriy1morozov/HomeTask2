@@ -1,4 +1,4 @@
-package com.example.borsh.hometask2;
+package com.example.borsh.ui;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

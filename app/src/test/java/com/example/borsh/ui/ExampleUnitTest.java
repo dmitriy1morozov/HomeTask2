@@ -1,4 +1,4 @@
-package com.example.borsh.hometask2;
+package com.example.borsh.ui;
 
 import org.junit.Test;
 
