@@ -21,9 +21,12 @@ android {
         }
     }
     buildToolsVersion project.ext.myBuildToolsVersion
+  buildToolsVersion '27.0.1'
 }
 
 dependencies {
+    compile 'com.facebook.stetho:stetho:1.5.0'
+
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
     // Tests

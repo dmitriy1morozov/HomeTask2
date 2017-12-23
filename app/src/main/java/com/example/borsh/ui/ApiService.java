@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import retrofit2.Call;
 import retrofit2.Callback;
+import static com.example.borsh.database.DBContract.*;
 
 public class ApiService extends Service {
    private static final String TAG = "MyLogs ApiService";
@@ -68,27 +69,29 @@ public class ApiService extends Service {
       for (int i = 0; i < posts.size(); i++) {
          ItemsItem singlePost = posts.get(i);
          String title = singlePost.getTitle();
-         title = title.replace("'", "''");
          String dateString = singlePost.getPubDate();
          long timestamp = 0;
          try {
             Date date = parser.parse(dateString);
             timestamp = date.getTime() / 1000;
          } catch (ParseException pe) {
-            Log.d(TAG, "onApiReplied: " + pe.getMessage());
+            Log.d(TAG, "insertPostsIntoDatabase: " + pe.getMessage());
          }
-         String imageUri = singlePost.getEnclosure().getLink();
-         imageUri = imageUri.replace("'", "''");
+         String image = singlePost.getEnclosure().getLink();
          String description = singlePost.getDescription();
-         description = description.replace("'", "''");
          String hyperlink = singlePost.getLink();
+
+         title = title.replace("'", "''");
+         image = image.replace("'", "''");
+         description = description.replace("'", "''");
          hyperlink = hyperlink.replace("'", "''");
 
-         contentValues.put("title", title);
-         contentValues.put("timestamp", timestamp);
-         contentValues.put("imageUri", imageUri);
-         contentValues.put("description", description);
-         contentValues.put("hyperlink", hyperlink);
+         contentValues.put(POST_TITLE, title);
+         contentValues.put(POST_TIMESTAMP, timestamp);
+         contentValues.put(POST_DATE, dateString);
+         contentValues.put(POST_IMAGE_URI, image);
+         contentValues.put(POST_DESCRIPTION, description);
+         contentValues.put(POST_HYPERLINK, hyperlink);
          Uri newUri = getContentResolver().insert(CONTENT_URI, contentValues);
          //Log.d(TAG, "insert, result Uri : " + String.valueOf(newUri));
       }

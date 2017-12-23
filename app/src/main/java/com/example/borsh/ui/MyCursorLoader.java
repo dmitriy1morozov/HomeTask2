@@ -8,7 +8,7 @@ import java.lang.ref.WeakReference;
 
 class MyCursorLoader extends CursorLoader {
 		private static final String TAG = "MyLogs MyCursorLoader";
-		WeakReference<Context> mContextRef;
+		private WeakReference<Context> mContextRef;
 
 		MyCursorLoader(Context context) {
 				super(context);

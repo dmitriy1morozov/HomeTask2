@@ -26,12 +26,12 @@ public class MyContentProvider extends ContentProvider {
 		static final String CONTENT_TYPE_MULTIPLE_ROWS = String.format(Locale.US,"%s.%s/%s.%s", "vnd", "android.cursor.dir", AUTHORITY, PATH);
 
 		//UriMatcher constants
-		public static final int URI_FEED = 1;
+		public static final int URI_FEED_ID = 1;
 		public static final int URI_POST_ID = 2;
 
 		private static final UriMatcher uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 		{
-				uriMatcher.addURI(AUTHORITY, PATH, URI_FEED);
+				uriMatcher.addURI(AUTHORITY, PATH, URI_FEED_ID);
 				uriMatcher.addURI(AUTHORITY, PATH + "/*", URI_POST_ID);
 		}
 
@@ -48,28 +48,29 @@ public class MyContentProvider extends ContentProvider {
 		}
 
 		@Override public Uri insert(@NonNull Uri uri, ContentValues values) {
-				if(uriMatcher.match(uri) != URI_FEED){
+				if(uriMatcher.match(uri) != URI_FEED_ID){
 						throw new IllegalArgumentException("Wrong URI: " + uri);
 				}
 
 				mSqliteDatabase = mDbHelper.getWritableDatabase();
-				String title = values.getAsString("title");
-				long timestamp = values.getAsLong("timestamp");
-				String image = values.getAsString("imageUri");
-				String description = values.getAsString("description");
-				String hyperlink = values.getAsString("hyperlink");
+				String title = values.getAsString(POST_TITLE);
+				long timestamp = values.getAsLong(POST_TIMESTAMP);
+				String date = values.getAsString(POST_DATE);
+				String image = values.getAsString(POST_IMAGE_URI);
+				String description = values.getAsString(POST_DESCRIPTION);
+				String hyperlink = values.getAsString(POST_HYPERLINK);
 				String rawQuery = String.format(Locale.US,
 						"INSERT OR IGNORE INTO %s"
-								+"(%s, %s, %s, %s, %s, %s)"
+								+"(%s, %s, %s, %s, %s, %s, %s)"
 								+ " VALUES "
-								+ "(%s, '%s', %d, '%s', '%s', '%s')",
+								+ "(%s, '%s', %d, '%s', '%s', '%s', '%s')",
 						DB_TABLE,
-						POST_ID, POST_TITLE, POST_DATE, POST_IMAGE_URI, POST_DESCRIPTION, POST_HYPERLINK,
-						"NULL", title, timestamp, image, description, hyperlink
+						POST_ID, POST_TITLE, POST_TIMESTAMP, POST_DATE, POST_IMAGE_URI, POST_DESCRIPTION, POST_HYPERLINK,
+						"NULL", title, timestamp, date, image, description, hyperlink
 				);
 				mSqliteDatabase.execSQL(rawQuery);
-				long rowCount = DatabaseUtils.queryNumEntries(mSqliteDatabase, DB_TABLE);
-				Uri resultUri = ContentUris.withAppendedId(URI_CONTENT, rowCount);
+				long totalRowCount = DatabaseUtils.queryNumEntries(mSqliteDatabase, DB_TABLE);
+				Uri resultUri = ContentUris.withAppendedId(URI_CONTENT, totalRowCount);
 				if(getContext() != null){
 						getContext().getContentResolver().notifyChange(resultUri, null);
 				}
@@ -80,8 +81,8 @@ public class MyContentProvider extends ContentProvider {
 		@Override public int delete(@NonNull Uri uri, String selection, String[] selectionArgs) {
 				Log.d(TAG, "delete: ");
 				switch (uriMatcher.match(uri)){
-						case URI_FEED:
-								Log.d(TAG, "delete URI_FEED");
+						case URI_FEED_ID:
+								Log.d(TAG, "delete URI_FEED_ID");
 								break;
 						case URI_POST_ID:
 								String id = uri.getLastPathSegment();
@@ -98,9 +99,9 @@ public class MyContentProvider extends ContentProvider {
 				mSqliteDatabase = mDbHelper.getWritableDatabase();
 				int cnt = mSqliteDatabase.delete(DB_TABLE, selection, selectionArgs);
 
-				if(getContext() != null){
-						//getContext().getContentResolver().notifyChange(uri, null);
-				}
+				//if(getContext() != null){
+				//		getContext().getContentResolver().notifyChange(uri, null);
+				//}
 				mSqliteDatabase.close();
 				return cnt;
 		}
@@ -113,10 +114,10 @@ public class MyContentProvider extends ContentProvider {
 		@Override public Cursor query(@NonNull Uri uri, String[] projection, String selection, String[] selectionArgs,
 				String sortOrder) {
 				switch (uriMatcher.match(uri)) {
-						case URI_FEED:
-								Log.d(TAG, "query URI_FEED");
+						case URI_FEED_ID:
+								Log.d(TAG, "query URI_FEED_ID");
 								if (TextUtils.isEmpty(sortOrder)) {
-										sortOrder = String.format(Locale.US,"%s %s", POST_DATE , "ASC");
+										sortOrder = String.format(Locale.US,"%s %s", POST_TIMESTAMP , "DESC");
 								}
 								break;
 						case URI_POST_ID:
@@ -143,7 +144,7 @@ public class MyContentProvider extends ContentProvider {
 		@Override public String getType(@NonNull Uri uri) {
 				Log.d(TAG, "getType: ");
 				switch (uriMatcher.match(uri)){
-						case URI_FEED:
+						case URI_FEED_ID:
 								return CONTENT_TYPE_MULTIPLE_ROWS;
 						case URI_POST_ID:
 								return CONTENT_TYPE_SINGLE_ROW;

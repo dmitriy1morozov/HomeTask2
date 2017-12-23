@@ -14,8 +14,9 @@ public class MainActivity extends AppCompatActivity {
       super.onCreate(savedInstanceState);
       Log.d(TAG, "onCreate: ");
       setContentView(R.layout.activity_main);
+      mRssFragment.setRetainInstance(true);
       getSupportFragmentManager().beginTransaction()
-             .add(R.id.frame_main_root, mRssFragment, "rssFragment")
-             .commit();
+          .replace(R.id.frame_main_root, mRssFragment, "rssFragment")
+          .commit();
    }
 }

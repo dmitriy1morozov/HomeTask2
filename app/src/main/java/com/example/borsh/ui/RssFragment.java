@@ -1,7 +1,6 @@
 package com.example.borsh.ui;
 
 import android.app.AlertDialog;
-import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -21,25 +20,15 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
-import java.util.HashMap;
 
-import static com.example.borsh.database.DBContract.POST_DATE;
-import static com.example.borsh.database.DBContract.POST_DESCRIPTION;
-import static com.example.borsh.database.DBContract.POST_HYPERLINK;
-import static com.example.borsh.database.DBContract.POST_IMAGE_URI;
-import static com.example.borsh.database.DBContract.POST_TITLE;
+import static com.example.borsh.database.DBContract.*;
 
 public class RssFragment extends Fragment implements AdapterView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener,
 		android.support.v4.app.LoaderManager.LoaderCallbacks<Cursor> {
 
-		public static final Uri CONTENT_URI = Uri.parse("content://com.example.borsh.rss.database/feed");
-
 		private static final String TAG = "MyLogs RssFragment";
-		private static final String ATTRIBUTE_IMAGE = "item_image";
-		private static final String ATTRIBUTE_DESCRIPTION = "item_description";
-		private static final String ATTRIBUTE_TITLE = "item_title";
-		private static final String ATTRIBUTE_DATE = "item_date";
-		private static final String ATTRIBUTE_HYPERLINK = "item_hyperlink";
+
+		public static final Uri CONTENT_URI = Uri.parse("content://com.example.borsh.rss.database/feed");
 
 		private ImageView mNoDataInLocalDbImage;
 		private SwipeRefreshLayout mSwipeToRefresh;
@@ -49,8 +38,6 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 		@Nullable @Override
 		public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
 				@Nullable Bundle savedInstanceState) {
-				Log.d(TAG, "onCreateView: ");
-
 				View rootView = inflater.inflate(R.layout.fragment_rss, container, false);
 				mNoDataInLocalDbImage = rootView.findViewById(R.id.image_rss_no_data_in_local_db);
 				mSwipeToRefresh = rootView.findViewById(R.id.swipe_rss);
@@ -61,14 +48,29 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 				int[] to = {R.id.image_item_image, R.id.text_item_title, R.id.text_item_description, R.id.text_item_date, R.id.text_item_hyperlink};
 				mAdapter = new MyRssAdapter(getActivity(), R.layout.item_rss, null, from, to, 0);
 				mFeedListView.setAdapter(mAdapter);
+
 				getActivity().getSupportLoaderManager().initLoader(0, null, RssFragment.this);
 				mFeedListView.setOnItemClickListener(this);
+
+				Log.d(TAG, "onCreateView!!!!!: ");
+				if(savedInstanceState != null){
+						int firstVisiblePostIndex = savedInstanceState.getInt("firstVisibleIndex");
+						Log.d(TAG, "OnCreateView: firstVisiblePostIndex = " + firstVisiblePostIndex);
+						mFeedListView.smoothScrollToPosition(firstVisiblePostIndex);
+				}
 				return rootView;
+		}
+
+
+		@Override public void onSaveInstanceState(Bundle outState) {
+				int firstVisiblePostIndex = mFeedListView.getFirstVisiblePosition();
+				outState.putInt("firstVisibleIndex", firstVisiblePostIndex);
+				super.onSaveInstanceState(outState);
 		}
 
 		@Override public void onResume() {
 				Log.d(TAG, "onResume: ");
-				getActivity().getSupportLoaderManager().getLoader(0).forceLoad();
+				//getActivity().getSupportLoaderManager().getLoader(0).forceLoad();
 				super.onResume();
 		}
 
@@ -130,11 +132,13 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 		}
 
 		@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				//TODO doesn't work yet
-				HashMap<String, Object> itemMap = (HashMap<String, Object>) mAdapter.getItem(position);
-				String title = String.valueOf(itemMap.get(ATTRIBUTE_TITLE));
-				String description = String.valueOf(itemMap.get(ATTRIBUTE_DESCRIPTION));
-				String hyperlinkString = String.valueOf(itemMap.get(ATTRIBUTE_HYPERLINK));
+				Cursor cursor = (Cursor) mAdapter.getItem(position);
+				int titleColumnIndex = cursor.getColumnIndex(POST_TITLE);
+				int descriptionColumnIndex = cursor.getColumnIndex(POST_DESCRIPTION);
+				int hyperlinkColumnIndex = cursor.getColumnIndex(POST_HYPERLINK);
+				String title = cursor.getString(titleColumnIndex);
+				String description = cursor.getString(descriptionColumnIndex);
+				String hyperlinkString = cursor.getString(hyperlinkColumnIndex);
 				final Uri hyperlink = Uri.parse(hyperlinkString);
 
 				final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), AlertDialog.THEME_DEVICE_DEFAULT_DARK);
