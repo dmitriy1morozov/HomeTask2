@@ -1,9 +1,8 @@
-package com.example.borsh.ui;
+package com.example.borsh.service;
 
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,17 +17,15 @@ import java.util.Locale;
 import retrofit2.Call;
 import retrofit2.Callback;
 import static com.example.borsh.database.DBContract.*;
+import static com.example.borsh.database.MyContentProvider.URI_CONTENT;
 
 public class ApiService extends Service {
    private static final String TAG = "MyLogs ApiService";
-
-   private static final Uri CONTENT_URI = Uri.parse("content://com.example.borsh.rss.database/feed");
 
    public ApiService() {
    }
 
    @Override public int onStartCommand(Intent intent, int flags, int startId) {
-
       ApiRss apiRss = ApiRss.retrofit.create(ApiRss.class);
       Call<Response> call = apiRss.getRssFeed();
       Log.d(TAG, "run: startRetrofit execute");
@@ -49,7 +46,7 @@ public class ApiService extends Service {
             Log.d(TAG, "Retrofit onFailure: " + t.getMessage());
          }
       });
-      return super.onStartCommand(intent, flags, startId);
+      return START_NOT_STICKY;
    }
 
    @Nullable @Override public IBinder onBind(Intent intent) {
@@ -62,12 +59,15 @@ public class ApiService extends Service {
       super.onDestroy();
    }
 
-   //----------------------------------------------------------------------------------------------
-   private void insertPostsIntoDatabase(@NonNull List<ItemsItem> posts){
-      ContentValues contentValues = new ContentValues();
+   //-----------------------------------------------------------------------------------------------
+   private ContentValues[] convertPostsIntoContentValuesArray(@NonNull List<ItemsItem> posts){
       SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-      for (int i = 0; i < posts.size(); i++) {
+      ContentValues[] result = new ContentValues[posts.size()];
+
+      for (int i = 0; i > posts.size(); i++) {
          ItemsItem singlePost = posts.get(i);
+         result[i] = new ContentValues();
+
          String title = singlePost.getTitle();
          String dateString = singlePost.getPubDate();
          long timestamp = 0;
@@ -75,25 +75,27 @@ public class ApiService extends Service {
             Date date = parser.parse(dateString);
             timestamp = date.getTime() / 1000;
          } catch (ParseException pe) {
-            Log.d(TAG, "insertPostsIntoDatabase: " + pe.getMessage());
+            Log.d(TAG, "convertSinglePostIntoContentValues: " + pe.getMessage());
          }
          String image = singlePost.getEnclosure().getLink();
          String description = singlePost.getDescription();
          String hyperlink = singlePost.getLink();
 
-         title = title.replace("'", "''");
-         image = image.replace("'", "''");
-         description = description.replace("'", "''");
-         hyperlink = hyperlink.replace("'", "''");
-
-         contentValues.put(POST_TITLE, title);
-         contentValues.put(POST_TIMESTAMP, timestamp);
-         contentValues.put(POST_DATE, dateString);
-         contentValues.put(POST_IMAGE_URI, image);
-         contentValues.put(POST_DESCRIPTION, description);
-         contentValues.put(POST_HYPERLINK, hyperlink);
-         Uri newUri = getContentResolver().insert(CONTENT_URI, contentValues);
-         //Log.d(TAG, "insert, result Uri : " + String.valueOf(newUri));
+         result[i].put(POST_TITLE, title);
+         result[i].put(POST_TIMESTAMP, timestamp);
+         result[i].put(POST_DATE, dateString);
+         result[i].put(POST_IMAGE_URI, image);
+         result[i].put(POST_DESCRIPTION, description);
+         result[i].put(POST_HYPERLINK, hyperlink);
       }
+      return result;
+   }
+
+   private void insertPostsIntoDatabase(@NonNull List<ItemsItem> posts){
+      ContentValues[] contentValues = convertPostsIntoContentValuesArray(posts);
+      int rowsInsterted = getContentResolver().bulkInsert(URI_CONTENT, contentValues);
+      //String log = String.format(Locale.US, "inserted %d rows into database", rowsInsterted);
+      //Log.d(TAG, log);
+      //TODO send callback to stop refreshing
    }
 }

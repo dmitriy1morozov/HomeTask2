@@ -1,13 +1,14 @@
 package com.example.borsh.database;
 
+import android.provider.BaseColumns;
 import java.util.Locale;
 
-public class DBContract {
+public class DBContract implements BaseColumns {
 		static final String DB_NAME = "rss";
 		static final String DB_TABLE = "feed";
 		static final int DB_VERSION = 1;
 
-		public static final String POST_ID = "_id";
+		//public static final String POST_ID = "_id";
 		public static final String POST_TITLE = "title";
 		public static final String POST_TIMESTAMP = "timestamp";
 		public static final String POST_DATE = "date";
@@ -20,6 +21,6 @@ public class DBContract {
 						+ "(%s integer primary key autoincrement, "
 						+ "%s text, %s integer, %s text, %s text, %s text, %s text, UNIQUE(%s));",
 				DB_TABLE,
-				POST_ID,
+				_ID,
 				POST_TITLE, POST_TIMESTAMP, POST_DATE, POST_IMAGE_URI, POST_DESCRIPTION, POST_HYPERLINK, POST_HYPERLINK);
 }

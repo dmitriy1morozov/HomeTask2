@@ -8,8 +8,7 @@ import android.widget.SimpleCursorAdapter;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
-public class MyRssAdapter extends SimpleCursorAdapter {
-
+class MyRssAdapter extends SimpleCursorAdapter {
    private RequestOptions mOptions;
 
    MyRssAdapter(Context context, int layout, Cursor cursor, String[] from, int[] to, int flags) {
@@ -19,9 +18,9 @@ public class MyRssAdapter extends SimpleCursorAdapter {
    }
 
    @Override public void setViewImage(ImageView imageView, String uri) {
-      Log.d("MyLogs", "setViewImage: ");
-      
-      Glide.with(imageView.getContext())
+      Log.d("MyLogs MyRssAdapter", "setViewImage: ");
+
+      Glide.with(imageView)
           .load(uri)
           .apply(mOptions)
           .thumbnail(0.1f)

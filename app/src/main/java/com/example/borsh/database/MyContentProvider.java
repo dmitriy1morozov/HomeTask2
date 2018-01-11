@@ -5,29 +5,30 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.provider.BaseColumns;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
+import java.io.File;
 import java.util.Locale;
 
 import static com.example.borsh.database.DBContract.*;
 
 public class MyContentProvider extends ContentProvider {
-		public static final String TAG = "MyLogs RssProvider";
+		private static final String TAG = "MyLogs RssProvider";
 
-		public static final String AUTHORITY = "com.example.borsh.rss.database";
-    public static final String PATH = DB_TABLE;
+		private static final String AUTHORITY = "com.example.borsh.database";
+    private static final String PATH = DB_TABLE;
 		public static final Uri URI_CONTENT = Uri.parse(String.format("content://%s/%s", AUTHORITY, PATH));
 
-		static final String CONTENT_TYPE_SINGLE_ROW = String.format(Locale.US,"%s.%s/%s.%s", "vnd", "android.cursor.item", AUTHORITY, PATH);
-		static final String CONTENT_TYPE_MULTIPLE_ROWS = String.format(Locale.US,"%s.%s/%s.%s", "vnd", "android.cursor.dir", AUTHORITY, PATH);
+		private static final String CONTENT_TYPE_SINGLE_ROW = String.format(Locale.US,"%s.%s/%s.%s", "vnd", "android.cursor.item", AUTHORITY, PATH);
+		private static final String CONTENT_TYPE_MULTIPLE_ROWS = String.format(Locale.US,"%s.%s/%s.%s", "vnd", "android.cursor.dir", AUTHORITY, PATH);
 
 		//UriMatcher constants
-		public static final int URI_FEED_ID = 1;
-		public static final int URI_POST_ID = 2;
+		private static final int URI_FEED_ID = 1;
+		private static final int URI_POST_ID = 2;
 
 		private static final UriMatcher uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 		{
@@ -35,8 +36,8 @@ public class MyContentProvider extends ContentProvider {
 				uriMatcher.addURI(AUTHORITY, PATH + "/*", URI_POST_ID);
 		}
 
-		DBHelper mDbHelper;
-		SQLiteDatabase mSqliteDatabase;
+		private DBHelper mDbHelper;
+		private SQLiteDatabase mSqliteDatabase;
 
 		public MyContentProvider() {
 		}
@@ -53,28 +54,12 @@ public class MyContentProvider extends ContentProvider {
 				}
 
 				mSqliteDatabase = mDbHelper.getWritableDatabase();
-				String title = values.getAsString(POST_TITLE);
-				long timestamp = values.getAsLong(POST_TIMESTAMP);
-				String date = values.getAsString(POST_DATE);
-				String image = values.getAsString(POST_IMAGE_URI);
-				String description = values.getAsString(POST_DESCRIPTION);
-				String hyperlink = values.getAsString(POST_HYPERLINK);
-				String rawQuery = String.format(Locale.US,
-						"INSERT OR IGNORE INTO %s"
-								+"(%s, %s, %s, %s, %s, %s, %s)"
-								+ " VALUES "
-								+ "(%s, '%s', %d, '%s', '%s', '%s', '%s')",
-						DB_TABLE,
-						POST_ID, POST_TITLE, POST_TIMESTAMP, POST_DATE, POST_IMAGE_URI, POST_DESCRIPTION, POST_HYPERLINK,
-						"NULL", title, timestamp, date, image, description, hyperlink
-				);
-				mSqliteDatabase.execSQL(rawQuery);
-				long totalRowCount = DatabaseUtils.queryNumEntries(mSqliteDatabase, DB_TABLE);
-				Uri resultUri = ContentUris.withAppendedId(URI_CONTENT, totalRowCount);
+				long rowId = mSqliteDatabase.insertWithOnConflict(DB_TABLE, null, values, SQLiteDatabase.CONFLICT_IGNORE);
+				Uri resultUri = ContentUris.withAppendedId(URI_CONTENT, rowId);
+
 				if(getContext() != null){
 						getContext().getContentResolver().notifyChange(resultUri, null);
 				}
-				mSqliteDatabase.close();
 				return resultUri;
 		}
 
@@ -88,9 +73,9 @@ public class MyContentProvider extends ContentProvider {
 								String id = uri.getLastPathSegment();
 								Log.d(TAG, "delete URI_POST_ID = " + id);
 								if(TextUtils.isEmpty(selection)){
-										selection = String.format( "%s = %s" ,POST_ID, id);
+										selection = String.format( "%s = %s" , BaseColumns._ID, id);
 								}else{
-										selection = String.format("%s AND %s = %s", selection, POST_ID, id);
+										selection = String.format("%s AND %s = %s", selection, BaseColumns._ID, id);
 								}
 								break;
 						default:
@@ -99,10 +84,9 @@ public class MyContentProvider extends ContentProvider {
 				mSqliteDatabase = mDbHelper.getWritableDatabase();
 				int cnt = mSqliteDatabase.delete(DB_TABLE, selection, selectionArgs);
 
-				//if(getContext() != null){
-				//		getContext().getContentResolver().notifyChange(uri, null);
-				//}
-				mSqliteDatabase.close();
+				if(getContext() != null){
+						getContext().getContentResolver().notifyChange(uri, null);
+				}
 				return cnt;
 		}
 
@@ -124,9 +108,9 @@ public class MyContentProvider extends ContentProvider {
 								String id = uri.getLastPathSegment();
 								Log.d(TAG, "query URI_POST_ID = " + id);
 								if (TextUtils.isEmpty(selection)) {
-										selection = String.format(Locale.US, "%s = %s", POST_ID, id);
+										selection = String.format(Locale.US, "%s = %s", BaseColumns._ID, id);
 								} else {
-										selection = String.format(Locale.US, "%s AND %s = %s", selection, POST_ID, id);
+										selection = String.format(Locale.US, "%s AND %s = %s", selection, BaseColumns._ID, id);
 								}
 								break;
 						default:
@@ -135,6 +119,7 @@ public class MyContentProvider extends ContentProvider {
 				mSqliteDatabase = mDbHelper.getWritableDatabase();
 				Cursor cursor = mSqliteDatabase.query(DB_TABLE, projection, selection, selectionArgs, null, null, sortOrder);
 				if(getContext() != null){
+						cursor.setNotificationUri(getContext().getContentResolver(), uri);
 						cursor.setNotificationUri(getContext().getContentResolver(), URI_CONTENT);
 				}
 				return cursor;

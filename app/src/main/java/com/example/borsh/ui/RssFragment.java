@@ -1,14 +1,17 @@
 package com.example.borsh.ui;
 
 import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -20,20 +23,23 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
+import com.example.borsh.service.ApiService;
 
 import static com.example.borsh.database.DBContract.*;
+import static com.example.borsh.database.MyContentProvider.URI_CONTENT;
 
 public class RssFragment extends Fragment implements AdapterView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener,
 		android.support.v4.app.LoaderManager.LoaderCallbacks<Cursor> {
 
 		private static final String TAG = "MyLogs RssFragment";
 
-		public static final Uri CONTENT_URI = Uri.parse("content://com.example.borsh.rss.database/feed");
-
 		private ImageView mNoDataInLocalDbImage;
 		private SwipeRefreshLayout mSwipeToRefresh;
 		private ListView mFeedListView;
 		private MyRssAdapter mAdapter;
+		private ContentObserver mContentObserver;
+
+		private int mFirstVisibleIndex = 0;
 
 		@Nullable @Override
 		public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
@@ -42,22 +48,20 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 				mNoDataInLocalDbImage = rootView.findViewById(R.id.image_rss_no_data_in_local_db);
 				mSwipeToRefresh = rootView.findViewById(R.id.swipe_rss);
 				mSwipeToRefresh.setOnRefreshListener(this);
-				mFeedListView = rootView.findViewById(R.id.listview_rss);
 
-				String[] from = { POST_IMAGE_URI, POST_TITLE, POST_DESCRIPTION, POST_DATE, POST_HYPERLINK};
-				int[] to = {R.id.image_item_image, R.id.text_item_title, R.id.text_item_description, R.id.text_item_date, R.id.text_item_hyperlink};
+				String[] from = { POST_IMAGE_URI, POST_TITLE, POST_DESCRIPTION, POST_DATE, POST_HYPERLINK };
+				int[] to = {
+						R.id.image_item_image, R.id.text_item_title, R.id.text_item_description,
+						R.id.text_item_date, R.id.text_item_hyperlink
+				};
 				mAdapter = new MyRssAdapter(getActivity(), R.layout.item_rss, null, from, to, 0);
+				mFeedListView = rootView.findViewById(R.id.listview_rss);
 				mFeedListView.setAdapter(mAdapter);
-
-				getActivity().getSupportLoaderManager().initLoader(0, null, RssFragment.this);
 				mFeedListView.setOnItemClickListener(this);
-
-				Log.d(TAG, "onCreateView!!!!!: ");
 				if(savedInstanceState != null){
-						int firstVisiblePostIndex = savedInstanceState.getInt("firstVisibleIndex");
-						Log.d(TAG, "OnCreateView: firstVisiblePostIndex = " + firstVisiblePostIndex);
-						mFeedListView.smoothScrollToPosition(firstVisiblePostIndex);
+						mFirstVisibleIndex = savedInstanceState.getInt("firstVisibleIndex");
 				}
+				getActivity().getSupportLoaderManager().initLoader(0, null, RssFragment.this);
 				return rootView;
 		}
 
@@ -68,10 +72,43 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 				super.onSaveInstanceState(outState);
 		}
 
+		@Override public void onStart() {
+				super.onStart();
+				ContentResolver contentResolver = getContext().getContentResolver();
+				mContentObserver = new ContentObserver(new Handler()) {
+						@Override public boolean deliverSelfNotifications() {
+								Log.d(TAG, "deliverSelfNotifications: ");
+								return super.deliverSelfNotifications();
+						}
+
+						@Override public void onChange(boolean selfChange) {
+								super.onChange(selfChange);
+								Log.d(TAG, "onChange1 = : " + selfChange);
+								getActivity().getSupportLoaderManager().getLoader(0).forceLoad();
+						}
+
+						@Override public void onChange(boolean selfChange, Uri uri) {
+								super.onChange(selfChange, uri);
+								Log.d(TAG, "onChange2: = " + selfChange);
+						}
+				};
+				contentResolver.registerContentObserver(URI_CONTENT, true, mContentObserver);
+		}
+
 		@Override public void onResume() {
-				Log.d(TAG, "onResume: ");
-				//getActivity().getSupportLoaderManager().getLoader(0).forceLoad();
 				super.onResume();
+				mFeedListView.smoothScrollToPositionFromTop(mFirstVisibleIndex,0);
+		}
+
+		@Override public void onStop() {
+				super.onStop();
+				getContext().getContentResolver().unregisterContentObserver(mContentObserver);
+		}
+
+		@Override public void onDestroy() {
+				super.onDestroy();
+				mSwipeToRefresh.setOnRefreshListener(null);
+				mFeedListView.setOnItemClickListener(null);
 		}
 
 		private void queryRssApi() {
@@ -94,15 +131,14 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 		@Override public void onRefresh() {
 				Log.d(TAG, "onRefresh: ");
 				if(!isInternetConnected()){
-						mSwipeToRefresh.setRefreshing(false);
 						FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
 						fragmentTransaction.addToBackStack(null);
 						NoInternetDialogFragment dialogFragment = new NoInternetDialogFragment();
 						dialogFragment.show(fragmentTransaction, "dialog");
 				}else{
 						queryRssApi();
-						getActivity().getSupportLoaderManager().getLoader(0).forceLoad();
 				}
+				mSwipeToRefresh.setRefreshing(false);
 		}
 
 		@Override public android.support.v4.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -118,7 +154,6 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 				}else{
 						mNoDataInLocalDbImage.setVisibility(View.GONE);
 				}
-				mSwipeToRefresh.setRefreshing(false);
 		}
 
 		@Override public void onLoaderReset(android.support.v4.content.Loader<Cursor> loader) {
@@ -128,7 +163,6 @@ public class RssFragment extends Fragment implements AdapterView.OnItemClickList
 				}else{
 						mNoDataInLocalDbImage.setVisibility(View.GONE);
 				}
-				mSwipeToRefresh.setRefreshing(false);
 		}
 
 		@Override public void onItemClick(AdapterView<?> parent, View view, int position, long id) {

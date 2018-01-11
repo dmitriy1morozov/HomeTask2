@@ -24,7 +24,7 @@
 				app:layout_constraintTop_toTopOf="parent"
 				android:layout_margin="8dp"
 				android:text="Click sync in the menu to retrieve data!"
-				android:textSize="18dp"
+				android:textSize="18sp"
 				/>
 
 </android.support.constraint.ConstraintLayout>

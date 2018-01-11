@@ -25,14 +25,14 @@
 				</activity>
 
 				<service
-						android:name="com.example.borsh.ui.ApiService"
+						android:name="com.example.borsh.service.ApiService"
 						android:enabled="true"
 						android:exported="true">
 				</service>
 
 				<provider
 						android:name="com.example.borsh.database.MyContentProvider"
-						android:authorities="com.example.borsh.rss.database"
+						android:authorities="com.example.borsh.database"
 						android:enabled="true"
 						android:exported="false">
 				</provider>

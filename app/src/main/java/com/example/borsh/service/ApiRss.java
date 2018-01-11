@@ -1,4 +1,4 @@
-package com.example.borsh.ui;
+package com.example.borsh.service;
 
 import com.example.borsh.rssPOJO.Response;
 import retrofit2.Call;
@@ -6,7 +6,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.GET;
 
-public interface ApiRss {
+interface ApiRss {
    String BASE_URL_NASA_IMAGE_OF_THE_DAY =
        "https://api.rss2json.com/v1/";
 
